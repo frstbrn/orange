@@ -42,7 +42,7 @@ char* open_shm_pool::get_shm(key_t key, u32 size)
     //  open
     open_shm_desc desc(key, size, -1);
     int ret = shm_create(desc._shm_id, key, size, false);
-    ast(ret && desc._shm_id >= 0);
+    ast(ret==0 && desc._shm_id >= 0);
     
     desc._mem = (char*)shm_attach(desc._shm_id, size);
     ast(desc._mem);
@@ -60,6 +60,10 @@ int shm_pool::load_shm_into_seg(const std::list<shm_key_desc>& shm, u32 seg_size
     {
         ast(seg_size == _seg_size);
     }
+    else    //  shadow agreement, non-specified size, ugly
+    {
+        _seg_size = seg_size;
+    }
     
     for (list<shm_key_desc>::const_iterator it = shm.begin()
          ; it != shm.end()
@@ -71,7 +75,7 @@ int shm_pool::load_shm_into_seg(const std::list<shm_key_desc>& shm, u32 seg_size
         u32 pcs = it->_size / seg_size;
         for(u32 i = 0; i < pcs; ++i)
         {
-            shm_seg_desc seg;
+            shm_seg seg;
             seg._shm_key = it ->_key;
             seg._shm_size = it->_size;
             seg._seg_offset = seg_size*i;
@@ -87,33 +91,33 @@ int shm_pool::load_shm_into_seg(const std::list<shm_key_desc>& shm, u32 seg_size
     return 0;
 }
 
-int shm_pool::alloc_desc(u32 size, matrix::mem_desc &desc)
+int shm_pool::alloc_handle(u32 size, matrix::mem_handle &desc)
 {
-    matrix::shm_seg_desc seg;
+    matrix::shm_seg seg;
     int ret = _seg_pool.alloc(seg);
     if(ret) return ret;
     
-    printf("_seg_pool.alloc[%8d] - [%8u] - [%8u] - [%8u]\n"
-           , seg._shm_key, seg._shm_size, seg._seg_offset, seg._seg_len);
+//    printf("_seg_pool.alloc[%8d] - [%8u] - [%8u] - [%8u]\n"
+//           , seg._shm_key, seg._shm_size, seg._seg_offset, seg._seg_len);
     
     desc._type = E_MEM_DESC_SHM_SEG;
-    memcpy(desc._buf, &seg, sizeof(shm_seg_desc));
+    memcpy(desc._buf, &seg, sizeof(shm_seg));
     
     return 0;
 }
 
-int shm_pool::free_desc(const mem_desc& desc)
+int shm_pool::free_handle(const mem_handle& desc)
 {
     if (desc._type != E_MEM_DESC_SHM_SEG)
         return -1;
     
-    const shm_seg_desc& sd = *(shm_seg_desc*)(desc._buf);
+    const shm_seg& sd = desc._shm_seg;
     return _seg_pool.free(sd);
 }
 
-int shm_pool::get_ptr(const matrix::mem_desc &desc, char *&mem)
+int shm_pool::get_ptr(const matrix::mem_handle &desc, char *&mem)
 {
-    shm_seg_desc& sd = *(shm_seg_desc*)desc._buf;
+    const shm_seg& sd = desc._shm_seg;
     char* shm = _oshmp.get_shm(sd._shm_key, sd._shm_size);
     ast(shm);
     mem = shm + sd._seg_offset;

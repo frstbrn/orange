@@ -82,22 +82,6 @@ namespace matrix {
         std::list<T> _used;
     };
 
-    struct shm_seg_desc
-    {
-        key_t _shm_key;
-        u32 _shm_size;
-        u32 _seg_offset;
-        u32 _seg_len;
-        
-        bool operator == (const shm_seg_desc& right) const
-        {
-            return (_shm_key == right._shm_key
-                    && _shm_size == right._shm_size
-                    && _seg_offset == right._seg_offset
-                    && _seg_len == right._seg_len);
-        }
-    };
-    
     struct open_shm_desc
     {
         open_shm_desc():_key(0), _shm_size(0), _shm_id(-1), _mem(0){}
@@ -125,18 +109,18 @@ namespace matrix {
         u32 _size;
     };
 
-    struct shm_pool : public desc_mpool
+    struct shm_pool : public shared_mpool
     {
         shm_pool():_seg_size(0){}
         virtual ~shm_pool(){}
         int load_shm_into_seg(const std::list<shm_key_desc>& shm, u32 seg_size);
         
-        virtual int alloc_desc(u32 size, mem_desc& desc);  //  size for assert only
-        virtual int free_desc(const mem_desc& desc);
-        virtual int get_ptr(const mem_desc& desc, char* &mem);
+        virtual int alloc_handle(u32 size, mem_handle& desc);  //  size for assert only
+        virtual int free_handle(const mem_handle& desc);
+        virtual int get_ptr(const mem_handle& desc, char* &mem);  //  static implimented, without init
         
         u32 _seg_size;
-        atomic_pool<shm_seg_desc> _seg_pool;
+        atomic_pool<shm_seg> _seg_pool;
         open_shm_pool _oshmp;
     };
     

@@ -19,7 +19,7 @@ SUB_LIBARYS =
 ALL_INC +=
 ALL_LIB = libcommu.a
 #ALL_SRC = $(foreach dir, $(SUB_MODULES), $(wildcard $(dir)/*.cpp))
-ALL_SRC = bus/mem_q.cpp
+ALL_SRC = bus/mem_q.cpp bus/shm_pool.cpp bus/shm_q.cpp
 ALL_OBJ = $(ALL_SRC:.cpp=.o)
 ALL_DEP = $(ALL_SRC:.cpp=.d)
 
